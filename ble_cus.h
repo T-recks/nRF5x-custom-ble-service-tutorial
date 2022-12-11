@@ -19,11 +19,12 @@ NRF_SDH_BLE_OBSERVER(_name ## _obs,                                             
 
 
 
-// CUSTOM_SERVICE_UUID_BASE f364adc9-b000-4042-ba50-05ca45bf8abc
+// CUSTOM_SERVICE_UUID_BASE f364adc9-00b0-4240-ba50-05ca45bf8abc
 
 #define CUSTOM_SERVICE_UUID_BASE         {0xBC, 0x8A, 0xBF, 0x45, 0xCA, 0x05, 0x50, 0xBA, \
                                           0x40, 0x42, 0xB0, 0x00, 0xC9, 0xAD, 0x64, 0xF3}
 
+//#define CUSTOM_SERVICE_UUID_BASE 0x0000
 #define CUSTOM_SERVICE_UUID               0x1400
 #define CUSTOM_VALUE_CHAR_UUID            0x1401
 																					
