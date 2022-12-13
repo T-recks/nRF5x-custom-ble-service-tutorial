@@ -180,9 +180,9 @@ static uint32_t custom_value_char_add(ble_cus_t * p_cus, const ble_cus_init_t * 
 
     attr_char_value.p_uuid    = &ble_uuid;
     attr_char_value.p_attr_md = &attr_md;
-    attr_char_value.init_len  = sizeof(uint8_t);
+    attr_char_value.init_len  = sizeof(sensor_packet_t);
     attr_char_value.init_offs = 0;
-    attr_char_value.max_len   = sizeof(uint8_t);
+    attr_char_value.max_len   = sizeof(sensor_packet_t);
 
     err_code = sd_ble_gatts_characteristic_add(p_cus->service_handle, &char_md,
                                                &attr_char_value,

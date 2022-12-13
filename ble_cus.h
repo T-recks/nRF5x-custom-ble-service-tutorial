@@ -6,6 +6,12 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 
+typedef struct sensor_packet {
+  float temperature;
+  float humidity;
+  uint64_t id;
+} sensor_packet_t;
+
 /**@brief   Macro for defining a ble_hrs instance.
  *
  * @param   _name   Name of the instance.
