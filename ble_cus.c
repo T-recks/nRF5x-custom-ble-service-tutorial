@@ -228,7 +228,7 @@ uint32_t ble_cus_init(ble_cus_t * p_cus, const ble_cus_init_t * p_cus_init)
     return custom_value_char_add(p_cus, p_cus_init);
 }
 
-uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value)
+uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, sensor_packet_t custom_value)
 {
     NRF_LOG_INFO("In ble_cus_custom_value_update. \r\n"); 
     if (p_cus == NULL)
@@ -242,9 +242,9 @@ uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value)
     // Initialize value struct.
     memset(&gatts_value, 0, sizeof(gatts_value));
 
-    gatts_value.len     = sizeof(uint8_t);
+    gatts_value.len     = sizeof(sensor_packet_t);
     gatts_value.offset  = 0;
-    gatts_value.p_value = &custom_value;
+    gatts_value.p_value = custom_value;
 
     // Update database.
     err_code = sd_ble_gatts_value_set(p_cus->conn_handle,

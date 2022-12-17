@@ -6,12 +6,13 @@
 #include "ble.h"
 #include "ble_srv_common.h"
 
-typedef struct sensor_packet {
-  float temperature;
-  float humidity;
-  uint64_t id;
-} sensor_packet_t;
+//typedef struct sensor_packet {
+//  float temperature;
+//  float humidity;
+//  uint64_t id;
+//} sensor_packet_t;
 
+typedef uint8_t sensor_packet_t[16];
 /**@brief   Macro for defining a ble_hrs instance.
  *
  * @param   _name   Name of the instance.
@@ -110,6 +111,6 @@ void ble_cus_on_ble_evt( ble_evt_t const * p_ble_evt, void * p_context);
  * @return      NRF_SUCCESS on success, otherwise an error code.
  */
 
-uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value);
+uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, sensor_packet_t custom_value);
 
 #endif // BLE_CUS_H__
