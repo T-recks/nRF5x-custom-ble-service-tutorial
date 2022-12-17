@@ -23,7 +23,7 @@ void list_insert_sorted(node_t* node) {
 
     // fault if given a NULL node
     if (node == NULL) {
-        printf("\n***\nERROR: node passed into `list_insert_sorted` was NULL!!\n***\n");
+        //printf("\n***\nERROR: node passed into `list_insert_sorted` was NULL!!\n***\n");
         nrf_delay_ms(100);
         APP_ERROR_CHECK(NRF_ERROR_NULL);
     }
@@ -75,7 +75,7 @@ node_t* list_remove_first() {
 void list_remove(node_t* node) {
     // fault if given a NULL node
     if (node == NULL) {
-        printf("\n***\nERROR: node passed into `list_remove_node` was NULL!!\n***\n");
+        //printf("\n***\nERROR: node passed into `list_remove_node` was NULL!!\n***\n");
         nrf_delay_ms(100);
         APP_ERROR_CHECK(NRF_ERROR_NULL);
     }

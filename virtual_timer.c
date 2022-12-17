@@ -130,20 +130,20 @@ uint32_t virtual_timer_start_repeated(uint32_t microseconds, virtual_timer_callb
 // Do not forget to free removed timers.
 void virtual_timer_cancel(uint32_t timer_id) {
   node_t* head = list_get_first();
-  list_print();
-  printf("first head_val: %u\n", head);
-  printf("timer id: %u\n", timer_id);
+  //list_print();
+  //printf("first head_val: %u\n", head);
+  //printf("timer id: %u\n", timer_id);
   while((head != NULL) && ((uint32_t) head != timer_id) && head->id != timer_id){
-    printf("curr head_val: %u\n", head);
+    //printf("curr head_val: %u\n", head);
     head = head->next;
   }
-  printf("final head_val: %u\n", head);
+  //printf("final head_val: %u\n", head);
   
   if(head != NULL) {
     list_remove(head);
     free(head);
   }
-  list_print();
+  //list_print();
 
 }
 
