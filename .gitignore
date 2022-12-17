@@ -1,3 +1,5 @@
+*.emProject
+*.emSession
 *.axf
 *.swp
 *.htm
