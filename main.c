@@ -147,10 +147,10 @@ BLE_ADVERTISING_DEF(m_advertising);                                             
 
 APP_TIMER_DEF(m_notification_timer_id);
 
-static uint8_t m_custom_value = 0;
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 float temp;
 float hum;
+static sensor_packet_t m_custom_value;
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 /* YOUR_JOB: Declare all services structure your application is using
@@ -293,8 +293,11 @@ static void notification_timeout_handler(void * p_context)
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
     
-    // Increment the value of m_custom_value before nortifing it.
-    m_custom_value++;
+    // Square the value of m_custom_value before nortifing it.
+    m_custom_value[0] += 1;
+    m_custom_value[4] += 1;
+    m_custom_value[8] += 1;
+    m_custom_value[12] += 1;
     
     err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
     APP_ERROR_CHECK(err_code);
