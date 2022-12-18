@@ -293,11 +293,7 @@ static void notification_timeout_handler(void * p_context)
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
     
-    // Square the value of m_custom_value before nortifing it.
-    m_custom_value[0] += 1;
-    m_custom_value[4] += 1;
-    m_custom_value[8] += 1;
-    m_custom_value[12] += 1;
+   
     
     err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
     APP_ERROR_CHECK(err_code);
@@ -1011,12 +1007,20 @@ int main(void)
     NRF_LOG_FLUSH();
 
 
-    //advertising_start(erase_bonds);
+    advertising_start(erase_bonds);
     //virtual_timer_start_repeated(1000, sensor_poll);
     // Enter main loop.
     for (;;)
     {
-        //idle_state_handle();
+        readData();
+        m_custom_value[0] = temp;
+        m_custom_value[4] = hum;
+        m_custom_value[8] = 0;
+        m_custom_value[12] = 0;
+        NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
+
+        idle_state_handle();
+        
     }
 }
 
