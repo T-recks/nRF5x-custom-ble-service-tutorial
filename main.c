@@ -995,10 +995,12 @@ int main(void)
     peer_manager_init();
 
     // Start execution.
+    //NRF_LOG_DEFAULT_BACKENDS_INIT();
+    NRF_LOG_FLUSH();
     NRF_LOG_INFO("Template example started.");
+    NRF_LOG_FLUSH();
     APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
-    NRF_LOG_DEFAULT_BACKENDS_INIT();
-    virtual_timer_init();
+    //virtual_timer_init();
     twi_init();
     bool b = begin();
     if(b) {
@@ -1006,13 +1008,15 @@ int main(void)
     }  else {
       NRF_LOG_INFO("Sensor didn't turn on :(");
     }
+    NRF_LOG_FLUSH();
 
-    advertising_start(erase_bonds);
-    virtual_timer_start_repeated(1000, sensor_poll);
+
+    //advertising_start(erase_bonds);
+    //virtual_timer_start_repeated(1000, sensor_poll);
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle();
+        //idle_state_handle();
     }
 }
 
