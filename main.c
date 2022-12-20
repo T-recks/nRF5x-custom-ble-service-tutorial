@@ -54,7 +54,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
+#include "nrf_drv_clock.h"
 #include "nordic_common.h"
 #include "nrf.h"
 #include "app_error.h"
@@ -115,7 +115,7 @@
 #define SEC_PARAM_MAX_KEY_SIZE          16                                      /**< Maximum encryption key size. */
 
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
-
+APP_TIMER_DEF(m_repeated_timer_id);     /**< Handler for repeated timer used to blink LED 1. */
 /* TWI instance ID. */
 
 #define TWI_INSTANCE_ID     0 // create a ID constant
@@ -138,7 +138,7 @@
 #define SHT31_HEATEREN 0x306D     /**< Heater Enable */
 #define SHT31_HEATERDIS 0x3066    /**< Heater Disable */
 #define SHT31_REG_HEATER_BIT 0x0d /**< Status Register Heater Bit */
-
+#define ARR_SIZE 1000
 NRF_BLE_GATT_DEF(m_gatt);
 NRF_BLE_QWR_DEF(m_qwr);
 /**< GATT module instance. */
@@ -150,6 +150,9 @@ APP_TIMER_DEF(m_notification_timer_id);
 static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
 float temp;
 float hum;
+float temp_array[ARR_SIZE] = {0};
+float hum_array[ARR_SIZE] = {0};
+int stk_ptr = 0;
 static sensor_packet_t m_custom_value;
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
@@ -292,9 +295,10 @@ static void notification_timeout_handler(void * p_context)
 {
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
-    
-   
-    
+    memcpy(&m_custom_value[0], &temp_array[stk_ptr], 4);
+    memcpy(&m_custom_value[4], &hum_array[stk_ptr], 4);
+    stk_ptr = stk_ptr > 0? stk_ptr - 1 : stk_ptr;
+    NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp_array[stk_ptr]), NRF_LOG_FLOAT(hum_array[stk_ptr]));
     err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
     APP_ERROR_CHECK(err_code);
 }
@@ -972,14 +976,43 @@ void sensor_poll(){
       NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
 }
 
+static void lfclk_request(void)
+{
+    ret_code_t err_code = nrf_drv_clock_init();
+    APP_ERROR_CHECK(err_code);
+    nrf_drv_clock_lfclk_request(NULL);
+}
+
+ 
+static void repeated_timer_handler(void * p_context)
+{
+    readData();
+    stk_ptr = stk_ptr >= ARR_SIZE? stk_ptr : stk_ptr + 1;
+    temp_array[stk_ptr] = temp;
+    hum_array[stk_ptr] = hum;
+    NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
+}
+
+static void create_timers()
+{
+    ret_code_t err_code;
+
+    // Create timers
+    err_code = app_timer_create(&m_repeated_timer_id,
+                                APP_TIMER_MODE_REPEATED,
+                                repeated_timer_handler);
+    APP_ERROR_CHECK(err_code);
+}
+
 
 /**@brief Function for application main entry.
  */
 int main(void)
 {
     bool erase_bonds;
-
+    ret_code_t err_code;
     // Initialize.
+    lfclk_request();
     log_init();
     timers_init();
     buttons_leds_init(&erase_bonds);
@@ -991,7 +1024,8 @@ int main(void)
     advertising_init();
     conn_params_init();
     peer_manager_init();
-
+    app_timer_init();
+    create_timers();
     // Start execution.
     //NRF_LOG_DEFAULT_BACKENDS_INIT();
     NRF_LOG_FLUSH();
@@ -1007,17 +1041,15 @@ int main(void)
       NRF_LOG_INFO("Sensor didn't turn on :(");
     }
     NRF_LOG_FLUSH();
-
+    
 
     advertising_start(erase_bonds);
+    err_code = app_timer_start(m_repeated_timer_id, APP_TIMER_TICKS(1000), NULL);
+    APP_ERROR_CHECK(err_code);
     //virtual_timer_start_repeated(1000, sensor_poll);
     // Enter main loop.
     for (;;)
     {
-        readData();
-        memcpy(&m_custom_value[0], &temp, 4);
-        memcpy(&m_custom_value[4], &hum, 4);
-        NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
 
         idle_state_handle();
         
