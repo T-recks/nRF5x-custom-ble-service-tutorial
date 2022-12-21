@@ -152,7 +152,9 @@ float temp;
 float hum;
 float temp_array[ARR_SIZE] = {0};
 float hum_array[ARR_SIZE] = {0};
+unsigned int count_array[ARR_SIZE] = {0};
 int stk_ptr = 0;
+unsigned int count = 0;
 static sensor_packet_t m_custom_value;
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;
 int state = 0;                        /**< Handle of the current connection. */
@@ -303,10 +305,12 @@ static void notification_timeout_handler(void * p_context)
     } else{
         memcpy(&m_custom_value[0], &temp_array[stk_ptr], 4);
         memcpy(&m_custom_value[4], &hum_array[stk_ptr], 4);
+        memcpy(&m_custom_value[8], &count_array[stk_ptr], 4);
+        NRF_LOG_INFO("%ud", count_array[stk_ptr]);
         stk_ptr -= 1;
         NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp_array[stk_ptr]), NRF_LOG_FLOAT(hum_array[stk_ptr]));
         err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
-        NRF_LOG_INFO("%d", stk_ptr);
+        
         if(err_code == NRF_ERROR_INVALID_STATE || err_code == NRF_ERROR_RESOURCES) {
           sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
           return;
@@ -1013,11 +1017,16 @@ static void repeated_timer_handler(void * p_context)
 {
     if(stk_ptr < ARR_SIZE - 1) {
       readData();
-      stk_ptr = stk_ptr >= ARR_SIZE? stk_ptr : stk_ptr + 1;
+      stk_ptr = stk_ptr + 1;
       temp_array[stk_ptr] = temp;
       hum_array[stk_ptr] = hum;
+      count_array[stk_ptr] = count;
+      count++;
       //NRF_LOG_INFO("Temp:" NRF_LOG_FLaOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
       NRF_LOG_INFO("SENSOR POLL");
+    } else {
+      app_timer_stop(m_repeated_timer_id);
+      NRF_LOG_INFO("WAITING");
     }
     
 }
