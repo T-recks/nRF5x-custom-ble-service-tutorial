@@ -307,6 +307,10 @@ static void notification_timeout_handler(void * p_context)
         NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp_array[stk_ptr]), NRF_LOG_FLOAT(hum_array[stk_ptr]));
         err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
         NRF_LOG_INFO("%d", stk_ptr);
+        if(err_code == NRF_ERROR_INVALID_STATE || err_code == NRF_ERROR_RESOURCES) {
+          sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+          return;
+        }
         APP_ERROR_CHECK(err_code);
     }
     
@@ -1007,12 +1011,15 @@ static void lfclk_request(void)
  
 static void repeated_timer_handler(void * p_context)
 {
-    readData();
-    stk_ptr = stk_ptr >= ARR_SIZE? stk_ptr : stk_ptr + 1;
-    temp_array[stk_ptr] = temp;
-    hum_array[stk_ptr] = hum;
-    //NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
-    NRF_LOG_INFO("SENSOR POLL");
+    if(stk_ptr < ARR_SIZE - 1) {
+      readData();
+      stk_ptr = stk_ptr >= ARR_SIZE? stk_ptr : stk_ptr + 1;
+      temp_array[stk_ptr] = temp;
+      hum_array[stk_ptr] = hum;
+      //NRF_LOG_INFO("Temp:" NRF_LOG_FLaOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
+      NRF_LOG_INFO("SENSOR POLL");
+    }
+    
 }
 
 static void create_timers()
