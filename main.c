@@ -113,7 +113,7 @@
 #define SEC_PARAM_OOB                   0                                       /**< Out Of Band data not available. */
 #define SEC_PARAM_MIN_KEY_SIZE          7                                       /**< Minimum encryption key size. */
 #define SEC_PARAM_MAX_KEY_SIZE          16                                      /**< Maximum encryption key size. */
-
+#define SENSOR_POLLING_RATE 1000
 #define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 APP_TIMER_DEF(m_repeated_timer_id);     /**< Handler for repeated timer used to blink LED 1. */
 /* TWI instance ID. */
@@ -154,7 +154,8 @@ float temp_array[ARR_SIZE] = {0};
 float hum_array[ARR_SIZE] = {0};
 int stk_ptr = 0;
 static sensor_packet_t m_custom_value;
-static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
+static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;
+int state = 0;                        /**< Handle of the current connection. */
 
 /* YOUR_JOB: Declare all services structure your application is using
  *  BLE_XYZ_DEF(m_xyz);
@@ -295,12 +296,20 @@ static void notification_timeout_handler(void * p_context)
 {
     UNUSED_PARAMETER(p_context);
     ret_code_t err_code;
-    memcpy(&m_custom_value[0], &temp_array[stk_ptr], 4);
-    memcpy(&m_custom_value[4], &hum_array[stk_ptr], 4);
-    stk_ptr = stk_ptr > 0? stk_ptr - 1 : stk_ptr;
-    NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp_array[stk_ptr]), NRF_LOG_FLOAT(hum_array[stk_ptr]));
-    err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
-    APP_ERROR_CHECK(err_code);
+    if(stk_ptr == 0) {
+    //disconnect
+        err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+        //APP_ERROR_CHECK(err_code);
+    } else{
+        memcpy(&m_custom_value[0], &temp_array[stk_ptr], 4);
+        memcpy(&m_custom_value[4], &hum_array[stk_ptr], 4);
+        stk_ptr -= 1;
+        NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp_array[stk_ptr]), NRF_LOG_FLOAT(hum_array[stk_ptr]));
+        err_code = ble_cus_custom_value_update(&m_cus, m_custom_value);
+        NRF_LOG_INFO("%d", stk_ptr);
+        APP_ERROR_CHECK(err_code);
+    }
+    
 }
 
 /**@brief Function for the Timer initialization.
@@ -426,20 +435,32 @@ static void on_cus_evt(ble_cus_t     * p_cus_service,
     {
         case BLE_CUS_EVT_NOTIFICATION_ENABLED:
             
-             err_code = app_timer_start(m_notification_timer_id, NOTIFICATION_INTERVAL, NULL);
-             APP_ERROR_CHECK(err_code);
+             //err_code = app_timer_start(m_notification_timer_id, NOTIFICATION_INTERVAL, NULL);
+             //APP_ERROR_CHECK(err_code);
+            state = 1;
+            
+            err_code = app_timer_start(m_notification_timer_id, NOTIFICATION_INTERVAL, NULL); //start bt timer
+            APP_ERROR_CHECK(err_code);
              break;
 
         case BLE_CUS_EVT_NOTIFICATION_DISABLED:
 
-            err_code = app_timer_stop(m_notification_timer_id);
-            APP_ERROR_CHECK(err_code);
+            //err_code = app_timer_stop(m_notification_timer_id);
+            //APP_ERROR_CHECK(err_code);
+              
             break;
 
         case BLE_CUS_EVT_CONNECTED:
+            err_code = app_timer_stop(m_repeated_timer_id); //stop sensor timer
+            APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_CUS_EVT_DISCONNECTED:
+              state = 0;
+              err_code = app_timer_stop(m_notification_timer_id); //stop bt timer
+              APP_ERROR_CHECK(err_code);
+              err_code = app_timer_start(m_repeated_timer_id, APP_TIMER_TICKS(SENSOR_POLLING_RATE), NULL); //start sensor timer
+              APP_ERROR_CHECK(err_code);
               break;
 
         default:
@@ -990,7 +1011,8 @@ static void repeated_timer_handler(void * p_context)
     stk_ptr = stk_ptr >= ARR_SIZE? stk_ptr : stk_ptr + 1;
     temp_array[stk_ptr] = temp;
     hum_array[stk_ptr] = hum;
-    NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
+    //NRF_LOG_INFO("Temp:" NRF_LOG_FLOAT_MARKER " Hum: " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(temp), NRF_LOG_FLOAT(hum));
+    NRF_LOG_INFO("SENSOR POLL");
 }
 
 static void create_timers()
@@ -1015,7 +1037,7 @@ int main(void)
     lfclk_request();
     log_init();
     timers_init();
-    buttons_leds_init(&erase_bonds);
+    //buttons_leds_init(&erase_bonds);
     power_management_init();
     ble_stack_init();
     gap_params_init();
@@ -1044,7 +1066,7 @@ int main(void)
     
 
     advertising_start(erase_bonds);
-    err_code = app_timer_start(m_repeated_timer_id, APP_TIMER_TICKS(1000), NULL);
+    err_code = app_timer_start(m_repeated_timer_id, APP_TIMER_TICKS(SENSOR_POLLING_RATE), NULL);
     APP_ERROR_CHECK(err_code);
     //virtual_timer_start_repeated(1000, sensor_poll);
     // Enter main loop.
